@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VidForge Pro — Editor de Video Web Profesional</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/konva@9.3.6/konva.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/wavesurfer.js@7.7.3/dist/wavesurfer.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ══════════════════════════ SPLASH ══════════════════════════ -->
+<div id="splash">
+  <div class="splash-inner">
+    <div class="logo-mark">
+      <div class="logo-hexagon"></div>
+      <span class="logo-letter">V</span>
+    </div>
+    <h1 class="splash-title">VidForge <span>Pro</span></h1>
+    <p class="splash-sub">Editor de Video Web · Nivel Profesional</p>
+    <div class="splash-bar"><div class="splash-fill" id="splashFill"></div></div>
+    <p class="splash-status" id="splashStatus">Inicializando motor FFmpeg…</p>
+    <div class="splash-modules">
+      <span class="module-tag" id="mod-ffmpeg">FFmpeg WASM</span>
+      <span class="module-tag" id="mod-webgl">GPU Effects</span>
+      <span class="module-tag" id="mod-audio">Web Audio</span>
+      <span class="module-tag" id="mod-konva">Konva.js</span>
+    </div>
+  </div>
+</div>
+
+<!-- Cinema Bars -->
+<div class="cinema-bars hidden" id="cinemaBars">
+  <div class="cinema-bar top"></div>
+  <div class="cinema-bar bottom"></div>
+</div>
+
+<!-- ══════════════════════════ APP ══════════════════════════ -->
+<div id="app" class="hidden">
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo-small">
+        <div class="logo-hexagon-sm"></div>
+        <span>VidForge <strong>Pro</strong></span>
+      </div>
+      <div class="project-name" id="projectName" contenteditable="true" spellcheck="false">Proyecto sin título</div>
+      <div class="save-indicator" id="saveIndicator" title="Guardado">●</div>
+    </div>
+
+    <nav class="topbar-tabs">
+      <button class="tab-btn active" data-panel="edit">✂ Editar</button>
+      <button class="tab-btn" data-panel="color">🎨 Color</button>
+      <button class="tab-btn" data-panel="audio">🎵 Audio</button>
+      <button class="tab-btn" data-panel="overlay">✨ Overlay</button>
+      <button class="tab-btn" data-panel="keyframes">⌛ Keyframes</button>
+      <button class="tab-btn" data-panel="transitions">⚡ Transiciones</button>
+      <button class="tab-btn" data-panel="ai">🤖 IA</button>
+      <button class="tab-btn" data-panel="export">⬇ Exportar</button>
+    </nav>
+
+    <div class="topbar-right">
+      <div class="fps-badge" id="fpsBadge">-- FPS</div>
+      <div class="gpu-badge" id="gpuBadge">GPU ✓</div>
+      <button class="btn-icon" id="btnUndo" title="Deshacer">↩</button>
+      <button class="btn-icon" id="btnRedo" title="Rehacer">↪</button>
+      <button class="btn-icon" id="btnCinema" title="Modo Cinema">🎬</button>
+      <button class="btn-icon" id="btnSaveProject" title="Guardar Proyecto">💾</button>
+      <button class="btn-primary" id="btnRender">⚡ Renderizar</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+
+    <!-- LEFT PANEL -->
+    <aside class="panel-left">
+
+      <!-- EDIT -->
+      <div class="panel-section" id="panel-edit">
+        <h3 class="panel-title">Biblioteca de Medios</h3>
+        <div class="upload-zone" id="uploadZone">
+          <div class="upload-icon">🎬</div>
+          <p>Arrastra video aquí</p>
+          <span>MP4, MOV, WebM, AVI</span>
+          <input type="file" id="fileInput" accept="video/*" multiple />
+        </div>
+        <div class="clips-grid" id="clipsGrid"></div>
+
+        <h3 class="panel-title mt">Herramientas</h3>
+        <div class="tool-group">
+          <button class="tool-btn active" id="toolSelect"><span class="tool-icon">↖</span> Selección</button>
+          <button class="tool-btn" id="toolCut"><span class="tool-icon">✂</span> Cortar en Cursor</button>
+          <button class="tool-btn" id="toolSplit"><span class="tool-icon">⟛</span> Dividir Clip</button>
+          <button class="tool-btn" id="toolTrim"><span class="tool-icon">⊢</span> Recortar</button>
+          <button class="tool-btn" id="toolRazor"><span class="tool-icon">⚡</span> Razor Blade</button>
+        </div>
+
+        <h3 class="panel-title mt">Velocidad de Reproducción</h3>
+        <div class="speed-presets">
+          <button class="speed-btn" data-speed="0.1">0.1x</button>
+          <button class="speed-btn" data-speed="0.25">0.25x</button>
+          <button class="speed-btn" data-speed="0.5">0.5x</button>
+          <button class="speed-btn active" data-speed="1">1x</button>
+          <button class="speed-btn" data-speed="1.5">1.5x</button>
+          <button class="speed-btn" data-speed="2">2x</button>
+          <button class="speed-btn" data-speed="4">4x</button>
+        </div>
+        <div class="param-row">
+          <label>Personalizado</label>
+          <input type="range" id="speedSlider" min="0.1" max="4" step="0.05" value="1" />
+          <span class="param-val" id="speedVal">1.0x</span>
+        </div>
+
+        <h3 class="panel-title mt">Recorte Preciso</h3>
+        <div class="trim-controls">
+          <div class="trim-field"><label>Inicio (s)</label><input type="number" id="trimStart" min="0" step="0.01" value="0" /></div>
+          <div class="trim-field"><label>Fin (s)</label><input type="number" id="trimEnd" min="0" step="0.01" value="0" /></div>
+        </div>
+        <div class="trim-actions">
+          <button class="btn-outline half" id="btnApplyTrim">✂ Recortar</button>
+          <button class="btn-outline half" id="btnSetInPoint">I — In</button>
+        </div>
+
+        <h3 class="panel-title mt">Opciones de Timeline</h3>
+        <div class="toggle-row">
+          <label>Snap Magnético</label>
+          <div class="toggle active-toggle" id="snapToggle"><div class="toggle-thumb"></div></div>
+        </div>
+        <div class="toggle-row">
+          <label>Snap a clips</label>
+          <div class="toggle active-toggle" id="snapClipsToggle"><div class="toggle-thumb"></div></div>
+        </div>
+      </div>
+
+      <!-- COLOR -->
+      <div class="panel-section hidden" id="panel-color">
+        <h3 class="panel-title">LUTs & Filtros Cinematográficos</h3>
+        <div class="filter-presets">
+          <div class="filter-thumb active" data-filter="none" style="background:#333">Original</div>
+          <div class="filter-thumb" data-filter="vivid" style="background:linear-gradient(135deg,#f472b6,#f59e0b)">Vivid</div>
+          <div class="filter-thumb" data-filter="cinematic" style="background:linear-gradient(135deg,#0d1b2a,#4a9eff)">Cinematic</div>
+          <div class="filter-thumb" data-filter="teal_orange" style="background:linear-gradient(135deg,#00b4d8,#fb923c)">Teal+Orange</div>
+          <div class="filter-thumb" data-filter="vintage" style="background:linear-gradient(135deg,#d4a574,#6b4226)">Vintage</div>
+          <div class="filter-thumb" data-filter="bw" style="background:linear-gradient(135deg,#111,#888)">B&W</div>
+          <div class="filter-thumb" data-filter="summer" style="background:linear-gradient(135deg,#ff6b35,#ffd700)">Summer</div>
+          <div class="filter-thumb" data-filter="cool" style="background:linear-gradient(135deg,#00b4d8,#90e0ef)">Cool Blue</div>
+          <div class="filter-thumb" data-filter="drama" style="background:linear-gradient(135deg,#1a001a,#6b0000)">Drama</div>
+          <div class="filter-thumb" data-filter="haze" style="background:linear-gradient(135deg,#b8cce4,#e8d5b7)">Haze</div>
+          <div class="filter-thumb" data-filter="cyberpunk" style="background:linear-gradient(135deg,#ff00ff,#00ffff)">Cyberpunk</div>
+          <div class="filter-thumb" data-filter="golden" style="background:linear-gradient(135deg,#b8860b,#ffd700)">Golden Hour</div>
+        </div>
+
+        <h3 class="panel-title mt">Curvas & Ajustes Manuales</h3>
+        <div class="color-sliders">
+          <div class="param-row"><label>Brillo</label><input type="range" id="brightness" min="-100" max="100" value="0"/><span class="param-val" id="brightnessVal">0</span></div>
+          <div class="param-row"><label>Contraste</label><input type="range" id="contrast" min="-100" max="100" value="0"/><span class="param-val" id="contrastVal">0</span></div>
+          <div class="param-row"><label>Saturación</label><input type="range" id="saturation" min="-100" max="100" value="0"/><span class="param-val" id="saturationVal">0</span></div>
+          <div class="param-row"><label>Tono</label><input type="range" id="hue" min="-180" max="180" value="0"/><span class="param-val" id="hueVal">0°</span></div>
+          <div class="param-row"><label>Temperatura</label><input type="range" id="temperature" min="-100" max="100" value="0"/><span class="param-val" id="temperatureVal">0</span></div>
+          <div class="param-row"><label>Exposición</label><input type="range" id="exposure" min="-100" max="100" value="0"/><span class="param-val" id="exposureVal">0</span></div>
+          <div class="param-row"><label>Highlights</label><input type="range" id="highlights" min="-100" max="100" value="0"/><span class="param-val" id="highlightsVal">0</span></div>
+          <div class="param-row"><label>Shadows</label><input type="range" id="shadows" min="-100" max="100" value="0"/><span class="param-val" id="shadowsVal">0</span></div>
+          <div class="param-row"><label>Viñeta</label><input type="range" id="vignette" min="0" max="100" value="0"/><span class="param-val" id="vignetteVal">0%</span></div>
+          <div class="param-row"><label>Desenfoque</label><input type="range" id="blurAmount" min="0" max="20" value="0"/><span class="param-val" id="blurVal">0px</span></div>
+          <div class="param-row"><label>Grano Film</label><input type="range" id="filmGrain" min="0" max="100" value="0"/><span class="param-val" id="filmGrainVal">0%</span></div>
+        </div>
+
+        <h3 class="panel-title mt">Efectos GPU (WebGL)</h3>
+        <div class="gpu-effects-grid">
+          <button class="gpu-btn" data-effect="bloom">✦ Bloom</button>
+          <button class="gpu-btn" data-effect="chromatic">◈ Chromatic</button>
+          <button class="gpu-btn" data-effect="glitch">⚡ Glitch</button>
+          <button class="gpu-btn" data-effect="vhs">📼 VHS</button>
+          <button class="gpu-btn" data-effect="duotone">◐ Duotone</button>
+          <button class="gpu-btn" data-effect="neon">☀ Neon Glow</button>
+        </div>
+        <div class="param-row mt-sm"><label>Intensidad GPU</label><input type="range" id="gpuIntensity" min="0" max="100" value="50"/><span class="param-val" id="gpuIntensityVal">50%</span></div>
+
+        <button class="btn-outline full mt" id="btnResetColor">↺ Restablecer Todo</button>
+        <button class="btn-outline full mt-sm" id="btnCopyColor">⧉ Copiar Ajustes</button>
+      </div>
+
+      <!-- AUDIO -->
+      <div class="panel-section hidden" id="panel-audio">
+        <h3 class="panel-title">Mixer de Audio Profesional</h3>
+        <div class="audio-controls">
+          <div class="param-row"><label>Vol. Principal</label><input type="range" id="masterVolume" min="0" max="200" value="100"/><span class="param-val" id="masterVolumeVal">100%</span></div>
+          <div class="param-row"><label>Fade In (s)</label><input type="range" id="fadeIn" min="0" max="10" step="0.1" value="0"/><span class="param-val" id="fadeInVal">0.0s</span></div>
+          <div class="param-row"><label>Fade Out (s)</label><input type="range" id="fadeOut" min="0" max="10" step="0.1" value="0"/><span class="param-val" id="fadeOutVal">0.0s</span></div>
+          <div class="param-row"><label>Pan</label><input type="range" id="audioPan" min="-100" max="100" value="0"/><span class="param-val" id="audioPanVal">Centro</span></div>
+          <div class="param-row"><label>Pitch (st)</label><input type="range" id="audioPitch" min="-12" max="12" value="0" step="1"/><span class="param-val" id="audioPitchVal">0</span></div>
+          <div class="param-row"><label>Reverb</label><input type="range" id="audioReverb" min="0" max="100" value="0"/><span class="param-val" id="audioReverbVal">0%</span></div>
+          <div class="param-row"><label>Compresor</label><input type="range" id="audioCompress" min="0" max="100" value="0"/><span class="param-val" id="audioCompressVal">0%</span></div>
+        </div>
+
+        <h3 class="panel-title mt">Ecualizador 7 Bandas</h3>
+        <div class="eq-bands" id="eqBands">
+          <div class="eq-band"><input type="range" class="eq-slider" data-freq="60" min="-12" max="12" value="0" orient="vertical"/><span>60Hz</span></div>
+          <div class="eq-band"><input type="range" class="eq-slider" data-freq="150" min="-12" max="12" value="0" orient="vertical"/><span>150Hz</span></div>
+          <div class="eq-band"><input type="range" class="eq-slider" data-freq="400" min="-12" max="12" value="0" orient="vertical"/><span>400Hz</span></div>
+          <div class="eq-band"><input type="range" class="eq-slider" data-freq="1000" min="-12" max="12" value="0" orient="vertical"/><span>1kHz</span></div>
+          <div class="eq-band"><input type="range" class="eq-slider" data-freq="2400" min="-12" max="12" value="0" orient="vertical"/><span>2.4k</span></div>
+          <div class="eq-band"><input type="range" class="eq-slider" data-freq="6000" min="-12" max="12" value="0" orient="vertical"/><span>6kHz</span></div>
+          <div class="eq-band"><input type="range" class="eq-slider" data-freq="16000" min="-12" max="12" value="0" orient="vertical"/><span>16kHz</span></div>
+        </div>
+
+        <h3 class="panel-title mt">Pistas de Audio</h3>
+        <div class="audio-tracks-mini" id="audioTracksMini">
+          <div class="audio-track-row">
+            <span class="atr-label">A1 — Video</span>
+            <input type="range" class="mini-vol" data-track="a1" min="0" max="100" value="100"/>
+            <button class="track-mute" data-track="a1">M</button>
+            <button class="track-solo" data-track="a1">S</button>
+          </div>
+          <div class="audio-track-row">
+            <span class="atr-label">A2 — Música</span>
+            <input type="range" class="mini-vol" data-track="a2" min="0" max="100" value="80"/>
+            <button class="track-mute" data-track="a2">M</button>
+            <button class="track-solo" data-track="a2">S</button>
+          </div>
+        </div>
+
+        <h3 class="panel-title mt">Música de Fondo</h3>
+        <div class="upload-zone-sm" id="musicZone">
+          <span>🎵 Agregar música de fondo</span>
+          <input type="file" id="musicInput" accept="audio/*" />
+        </div>
+        <div class="param-row" id="musicVolumeRow" style="display:none">
+          <label>Vol. Música</label>
+          <input type="range" id="musicVolume" min="0" max="100" value="50"/>
+          <span class="param-val" id="musicVolumeVal">50%</span>
+        </div>
+        <div id="waveformContainer"></div>
+      </div>
+
+      <!-- OVERLAY -->
+      <div class="panel-section hidden" id="panel-overlay">
+        <h3 class="panel-title">Texto & Overlays</h3>
+        <div class="overlay-type-tabs">
+          <button class="ov-tab active" data-ov="text">Texto</button>
+          <button class="ov-tab" data-ov="shape">Forma</button>
+          <button class="ov-tab" data-ov="sticker">Sticker</button>
+          <button class="ov-tab" data-ov="subtitle">Subtítulo</button>
+        </div>
+
+        <div id="ov-text" class="ov-section">
+          <div class="text-input-group">
+            <input type="text" id="overlayText" placeholder="Escribe tu texto…"/>
+            <button class="btn-primary" id="btnAddText">+</button>
+          </div>
+          <div class="param-row"><label>Fuente</label>
+            <select id="fontFamily">
+              <option value="Syne">Syne</option>
+              <option value="Space Grotesk">Space Grotesk</option>
+              <option value="Impact">Impact</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Courier New">Courier New</option>
+              <option value="Arial">Arial</option>
+            </select>
+          </div>
+          <div class="param-row"><label>Tamaño</label><input type="range" id="fontSize" min="8" max="200" value="40"/><span class="param-val" id="fontSizeVal">40px</span></div>
+          <div class="param-row"><label>Color</label><input type="color" id="fontColor" value="#ffffff" class="color-pick"/></div>
+          <div class="param-row"><label>Borde</label><input type="color" id="strokeColor" value="#000000" class="color-pick"/><input type="range" id="strokeWidth" min="0" max="10" value="0" style="flex:1;margin:0 8px"/><span class="param-val" id="strokeVal">0</span></div>
+          <div class="param-row"><label>Opacidad</label><input type="range" id="textOpacity" min="0" max="1" step="0.01" value="1"/><span class="param-val" id="textOpacityVal">100%</span></div>
+          <div class="style-buttons">
+            <button class="style-btn" id="btnBold"><b>B</b></button>
+            <button class="style-btn" id="btnItalic"><i>I</i></button>
+            <button class="style-btn" id="btnUnderline"><u>U</u></button>
+            <button class="style-btn" id="btnUppercase">AA</button>
+          </div>
+          <h3 class="panel-title mt">Animación</h3>
+          <div class="anim-presets">
+            <button class="anim-btn active" data-anim="none">Sin animación</button>
+            <button class="anim-btn" data-anim="fadeIn">Fade In</button>
+            <button class="anim-btn" data-anim="slideUp">Slide Up</button>
+            <button class="anim-btn" data-anim="slideLeft">Slide Left</button>
+            <button class="anim-btn" data-anim="bounceIn">Bounce In</button>
+            <button class="anim-btn" data-anim="typewriter">Typewriter</button>
+            <button class="anim-btn" data-anim="glitch">Glitch FX</button>
+            <button class="anim-btn" data-anim="scaleIn">Scale In</button>
+          </div>
+        </div>
+
+        <div id="ov-shape" class="ov-section hidden">
+          <div class="shape-grid">
+            <button class="shape-btn" data-shape="rect">▬ Rect</button>
+            <button class="shape-btn" data-shape="roundrect">▭ Rounded</button>
+            <button class="shape-btn" data-shape="circle">● Círculo</button>
+            <button class="shape-btn" data-shape="arrow">➡ Flecha</button>
+            <button class="shape-btn" data-shape="star">★ Estrella</button>
+            <button class="shape-btn" data-shape="line">— Línea</button>
+            <button class="shape-btn" data-shape="triangle">▲ Triángulo</button>
+            <button class="shape-btn" data-shape="hexagon">⬡ Hexágono</button>
+          </div>
+          <div class="param-row mt"><label>Relleno</label><input type="color" id="shapeFill" value="#ff4757" class="color-pick"/></div>
+          <div class="param-row"><label>Borde</label><input type="color" id="shapeBorder" value="#ffffff" class="color-pick"/></div>
+          <div class="param-row"><label>Grosor</label><input type="range" id="shapeStroke" min="0" max="20" value="2"/><span class="param-val" id="shapeStrokeVal">2</span></div>
+          <div class="param-row"><label>Opacidad</label><input type="range" id="shapeOpacity" min="0" max="1" step="0.01" value="1"/><span class="param-val" id="shapeOpacityVal">100%</span></div>
+          <div class="param-row"><label>Blur borde</label><input type="range" id="shapeBlur" min="0" max="20" value="0"/><span class="param-val" id="shapeBlurVal">0</span></div>
+        </div>
+
+        <div id="ov-sticker" class="ov-section hidden">
+          <input type="text" id="stickerSearch" placeholder="🔍 Buscar emoji…" class="sticker-search-input"/>
+          <div class="sticker-grid" id="stickerGrid">
+            <div class="sticker-item" data-emoji="😊">😊</div><div class="sticker-item" data-emoji="🔥">🔥</div>
+            <div class="sticker-item" data-emoji="⭐">⭐</div><div class="sticker-item" data-emoji="💯">💯</div>
+            <div class="sticker-item" data-emoji="🎬">🎬</div><div class="sticker-item" data-emoji="🎵">🎵</div>
+            <div class="sticker-item" data-emoji="❤️">❤️</div><div class="sticker-item" data-emoji="✨">✨</div>
+            <div class="sticker-item" data-emoji="🚀">🚀</div><div class="sticker-item" data-emoji="💎">💎</div>
+            <div class="sticker-item" data-emoji="⚡">⚡</div><div class="sticker-item" data-emoji="🎯">🎯</div>
+            <div class="sticker-item" data-emoji="🏆">🏆</div><div class="sticker-item" data-emoji="🌟">🌟</div>
+            <div class="sticker-item" data-emoji="👑">👑</div><div class="sticker-item" data-emoji="💪">💪</div>
+            <div class="sticker-item" data-emoji="🎉">🎉</div><div class="sticker-item" data-emoji="🌊">🌊</div>
+            <div class="sticker-item" data-emoji="🎮">🎮</div><div class="sticker-item" data-emoji="📸">📸</div>
+          </div>
+          <div class="param-row mt"><label>Tamaño</label><input type="range" id="stickerSize" min="20" max="200" value="60"/><span class="param-val" id="stickerSizeVal">60px</span></div>
+        </div>
+
+        <div id="ov-subtitle" class="ov-section hidden">
+          <button class="btn-outline full" id="btnAutoSubtitles">🤖 Subtítulos con IA</button>
+          <div class="param-row mt"><label>Fuente</label><select id="subFont"><option value="Space Grotesk">Space Grotesk</option><option value="Impact">Impact</option></select></div>
+          <div class="param-row"><label>Tamaño</label><input type="range" id="subSize" min="12" max="60" value="24"/><span class="param-val" id="subSizeVal">24px</span></div>
+          <div class="param-row"><label>Color</label><input type="color" id="subColor" value="#ffffff" class="color-pick"/></div>
+          <textarea id="subText" placeholder="00:00:00 — 00:00:03&#10;Texto del subtítulo" class="sub-textarea"></textarea>
+          <button class="btn-primary full mt-sm" id="btnAddSubtitle">+ Agregar Subtítulo</button>
+        </div>
+
+        <div id="selectedControls" class="selected-controls hidden">
+          <h3 class="panel-title mt">Elemento seleccionado</h3>
+          <div class="selected-btns">
+            <button class="btn-outline" id="btnDeleteSelected">🗑</button>
+            <button class="btn-outline" id="btnDuplicateSelected">⧉</button>
+            <button class="btn-outline" id="btnBringFront">↑</button>
+            <button class="btn-outline" id="btnSendBack">↓</button>
+          </div>
+          <div class="param-row"><label>Rotación</label><input type="range" id="elemRotation" min="-180" max="180" value="0"/><span class="param-val" id="elemRotationVal">0°</span></div>
+        </div>
+      </div>
+
+      <!-- KEYFRAMES -->
+      <div class="panel-section hidden" id="panel-keyframes">
+        <h3 class="panel-title">Sistema de Keyframes</h3>
+        <p class="kf-hint">Selecciona un overlay y haz clic en ◆ para añadir un keyframe en el tiempo actual.</p>
+
+        <h3 class="panel-title mt">Propiedades Animables</h3>
+        <div class="kf-prop-list">
+          <div class="kf-prop-row"><span>Posición X</span><button class="kf-add-btn" data-prop="x">◆ KF</button></div>
+          <div class="kf-prop-row"><span>Posición Y</span><button class="kf-add-btn" data-prop="y">◆ KF</button></div>
+          <div class="kf-prop-row"><span>Escala</span><button class="kf-add-btn" data-prop="scale">◆ KF</button></div>
+          <div class="kf-prop-row"><span>Opacidad</span><button class="kf-add-btn" data-prop="opacity">◆ KF</button></div>
+          <div class="kf-prop-row"><span>Rotación</span><button class="kf-add-btn" data-prop="rotation">◆ KF</button></div>
+        </div>
+
+        <h3 class="panel-title mt">Interpolación</h3>
+        <div class="interp-btns">
+          <button class="interp-btn active" data-interp="linear">Linear</button>
+          <button class="interp-btn" data-interp="ease">Ease</button>
+          <button class="interp-btn" data-interp="easeIn">Ease In</button>
+          <button class="interp-btn" data-interp="easeOut">Ease Out</button>
+          <button class="interp-btn" data-interp="bounce">Bounce</button>
+        </div>
+
+        <h3 class="panel-title mt">Keyframes Activos</h3>
+        <div class="kf-list" id="kfList"><div class="layer-empty">Sin keyframes</div></div>
+        <button class="btn-outline full mt" id="btnClearKeyframes">🗑 Limpiar Keyframes</button>
+        <button class="btn-outline full mt-sm" id="btnPreviewKeyframes">▶ Previsualizar Animación</button>
+      </div>
+
+      <!-- TRANSITIONS -->
+      <div class="panel-section hidden" id="panel-transitions">
+        <h3 class="panel-title">Transiciones entre Clips</h3>
+        <div class="transition-grid" id="transitionGrid">
+          <div class="transition-card active" data-transition="cut"><div class="trans-preview cut-prev"></div><span>Corte</span></div>
+          <div class="transition-card" data-transition="crossdissolve"><div class="trans-preview dissolve-prev"></div><span>Cross Dissolve</span></div>
+          <div class="transition-card" data-transition="fade"><div class="trans-preview fade-prev"></div><span>Fade Black</span></div>
+          <div class="transition-card" data-transition="zoom"><div class="trans-preview zoom-prev"></div><span>Zoom Blur</span></div>
+          <div class="transition-card" data-transition="wipe"><div class="trans-preview wipe-prev"></div><span>Wipe</span></div>
+          <div class="transition-card" data-transition="glitch"><div class="trans-preview glitch-prev"></div><span>Glitch FX</span></div>
+          <div class="transition-card" data-transition="filmburn"><div class="trans-preview burn-prev"></div><span>Film Burn</span></div>
+          <div class="transition-card" data-transition="whippan"><div class="trans-preview whip-prev"></div><span>Whip Pan</span></div>
+          <div class="transition-card" data-transition="rgbsplit"><div class="trans-preview rgb-prev"></div><span>RGB Split</span></div>
+          <div class="transition-card" data-transition="motionblur"><div class="trans-preview mblur-prev"></div><span>Motion Blur</span></div>
+        </div>
+        <div class="param-row mt"><label>Duración</label><input type="range" id="transDuration" min="0.1" max="3" step="0.05" value="0.5"/><span class="param-val" id="transDurationVal">0.5s</span></div>
+        <button class="btn-primary full mt" id="btnApplyTransition">⚡ Aplicar Transición</button>
+        <h3 class="panel-title mt">Previsualizar</h3>
+        <canvas id="transPreviewCanvas" width="240" height="135" class="trans-preview-canvas"></canvas>
+        <button class="btn-outline full mt-sm" id="btnPreviewTrans">▶ Preview Transición</button>
+      </div>
+
+      <!-- AI -->
+      <div class="panel-section hidden" id="panel-ai">
+        <h3 class="panel-title">🤖 Herramientas de Inteligencia Artificial</h3>
+        <div class="ai-tools">
+          <div class="ai-tool-card"><div class="ai-tool-icon">💬</div><div class="ai-tool-info"><strong>Subtítulos Automáticos</strong><span>Detección de voz con IA</span></div><button class="btn-primary ai-run-btn" data-ai="subtitles">▶</button></div>
+          <div class="ai-tool-card"><div class="ai-tool-icon">🔇</div><div class="ai-tool-info"><strong>Detectar Silencios</strong><span>Corta silencios automáticamente</span></div><button class="btn-primary ai-run-btn" data-ai="silence">▶</button></div>
+          <div class="ai-tool-card"><div class="ai-tool-icon">🎨</div><div class="ai-tool-info"><strong>Corrección de Color</strong><span>Balance automático inteligente</span></div><button class="btn-primary ai-run-btn" data-ai="color">▶</button></div>
+          <div class="ai-tool-card"><div class="ai-tool-icon">📱</div><div class="ai-tool-info"><strong>Auto Reframe</strong><span>16:9 → 9:16 para Reels/TikTok</span></div><button class="btn-primary ai-run-btn" data-ai="reframe">▶</button></div>
+          <div class="ai-tool-card"><div class="ai-tool-icon">⭐</div><div class="ai-tool-info"><strong>Detectar Highlights</strong><span>Identifica los mejores momentos</span></div><button class="btn-primary ai-run-btn" data-ai="highlights">▶</button></div>
+          <div class="ai-tool-card"><div class="ai-tool-icon">🌫</div><div class="ai-tool-info"><strong>Blur de Fondo IA</strong><span>Segmentación automática</span></div><button class="btn-primary ai-run-btn" data-ai="bgblur">▶</button></div>
+        </div>
+        <div class="ai-progress hidden" id="aiProgress">
+          <div class="ai-prog-bar"><div class="ai-prog-fill" id="aiProgFill"></div></div>
+          <p id="aiProgStatus">Procesando…</p>
+        </div>
+      </div>
+
+      <!-- EXPORT -->
+      <div class="panel-section hidden" id="panel-export">
+        <h3 class="panel-title">Presets de Exportación</h3>
+        <div class="export-presets">
+          <button class="export-preset-btn active" data-preset="custom">⚙ Custom</button>
+          <button class="export-preset-btn" data-preset="youtube">▶ YouTube 4K</button>
+          <button class="export-preset-btn" data-preset="tiktok">♪ TikTok</button>
+          <button class="export-preset-btn" data-preset="instagram">📷 Instagram</button>
+          <button class="export-preset-btn" data-preset="cinema">🎬 Cinema</button>
+          <button class="export-preset-btn" data-preset="web">🌐 Web</button>
+        </div>
+
+        <h3 class="panel-title mt">Configuración</h3>
+        <div class="export-options">
+          <div class="export-opt"><label>Formato</label><select id="exportFormat"><option value="mp4">MP4 (H.264)</option><option value="webm">WebM (VP9)</option><option value="gif">GIF Animado</option></select></div>
+          <div class="export-opt"><label>Resolución</label><select id="exportQuality"><option value="4k">4K (2160p)</option><option value="high">1080p HD</option><option value="medium">720p HD</option><option value="low">480p SD</option><option value="social">360p Social</option></select></div>
+          <div class="export-opt"><label>FPS</label><select id="exportFps"><option value="60">60 FPS</option><option value="30" selected>30 FPS</option><option value="24">24 FPS Cine</option></select></div>
+          <div class="export-opt"><label>Bitrate</label><select id="exportBitrate"><option value="50000k">50Mbps (4K)</option><option value="8000k">8Mbps (Alta)</option><option value="4000k" selected>4Mbps (Std)</option><option value="2000k">2Mbps (Web)</option></select></div>
+        </div>
+
+        <h3 class="panel-title mt">Segmento de Exportación</h3>
+        <div class="trim-controls">
+          <div class="trim-field"><label>Desde (s)</label><input type="number" id="exportStart" value="0" min="0" step="0.01"/></div>
+          <div class="trim-field"><label>Hasta (s)</label><input type="number" id="exportEnd" value="0" min="0" step="0.01"/></div>
+        </div>
+
+        <h3 class="panel-title mt">Metadatos</h3>
+        <input type="text" class="meta-input" id="metaTitle" placeholder="Título del video"/>
+        <input type="text" class="meta-input" id="metaArtist" placeholder="Autor / Canal"/>
+
+        <div class="render-info" id="renderInfo" style="display:none">
+          <div class="render-progress"><div class="render-bar" id="renderBar"></div></div>
+          <p id="renderStatus">Preparando…</p>
+        </div>
+
+        <button class="btn-primary full mt" id="btnExport">⬇ Exportar Video</button>
+        <button class="btn-outline full mt-sm" id="btnExportFrame">📷 Exportar Frame</button>
+        <button class="btn-outline full mt-sm" id="btnExportGif">🎞 Exportar GIF</button>
+      </div>
+    </aside>
+
+    <!-- CENTER PREVIEW -->
+    <main class="preview-area">
+      <div class="preview-header">
+        <div class="video-info" id="videoInfo">Sin video cargado</div>
+        <div class="preview-controls-top">
+          <button class="btn-icon-sm" id="btnAspect169">16:9</button>
+          <button class="btn-icon-sm" id="btnAspect11">1:1</button>
+          <button class="btn-icon-sm" id="btnAspect916">9:16</button>
+          <button class="btn-icon-sm" id="btnAspect43">4:3</button>
+          <span class="v-sep">|</span>
+          <button class="btn-icon-sm" id="btnSafeArea">⊡ Safe</button>
+          <button class="btn-icon-sm" id="btnGrid">⊞ Grid</button>
+          <button class="btn-icon-sm" id="btnFullscreen">⛶</button>
+        </div>
+      </div>
+
+      <div class="preview-container" id="previewContainer">
+        <!-- Overlays informativos -->
+        <div class="safe-area-overlay hidden" id="safeAreaOverlay">
+          <div class="safe-action"></div>
+          <div class="safe-title"></div>
+        </div>
+        <div class="grid-overlay hidden" id="gridOverlay"></div>
+
+        <div class="preview-inner" id="previewInner">
+          <video id="videoPlayer" crossOrigin="anonymous" playsinline></video>
+          <!-- WebGL GPU Effects canvas -->
+          <canvas id="glCanvas"></canvas>
+          <!-- Konva -->
+          <div id="konvaContainer"></div>
+          <!-- Vignette -->
+          <div class="vignette-overlay" id="vignetteOverlay"></div>
+          <!-- Film grain -->
+          <canvas id="grainCanvas"></canvas>
+          <!-- Drop overlay -->
+          <div class="drop-overlay" id="dropOverlay">
+            <div class="drop-inner">
+              <div class="drop-icon">🎬</div>
+              <p>Suelta tu video aquí</p>
+              <span>MP4, MOV, WebM, AVI</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Playback Bar -->
+      <div class="playback-bar">
+        <div class="time-display">
+          <span id="currentTime">0:00.000</span>
+          <span class="time-sep">/</span>
+          <span id="totalTime">0:00.000</span>
+        </div>
+        <div class="playback-controls">
+          <button class="ctrl-btn" id="btnSkipStart">⏮</button>
+          <button class="ctrl-btn" id="btnBack1" title="-1 frame">-1f</button>
+          <button class="ctrl-btn" id="btnBack5">-5s</button>
+          <button class="ctrl-btn play-pause" id="btnPlayPause">▶</button>
+          <button class="ctrl-btn" id="btnFwd5">+5s</button>
+          <button class="ctrl-btn" id="btnFwd1" title="+1 frame">+1f</button>
+          <button class="ctrl-btn" id="btnSkipEnd">⏭</button>
+          <button class="ctrl-btn" id="btnLoop">🔁</button>
+          <button class="ctrl-btn" id="btnMute">🔊</button>
+        </div>
+        <div class="zoom-control">
+          <button class="btn-icon-sm" id="btnZoomOut">−</button>
+          <span id="zoomLabel">100%</span>
+          <button class="btn-icon-sm" id="btnZoomIn">+</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT PANEL -->
+    <aside class="panel-right">
+      <h3 class="panel-title">Histograma RGB</h3>
+      <canvas id="histogramCanvas" width="200" height="100"></canvas>
+
+      <h3 class="panel-title mt">Vectorscope</h3>
+      <canvas id="vectorscopeCanvas" width="200" height="100"></canvas>
+
+      <h3 class="panel-title mt">Info del Clip</h3>
+      <div class="clip-info" id="clipInfoPanel">
+        <div class="info-row"><span>Duración</span><span id="infoDuration">—</span></div>
+        <div class="info-row"><span>Resolución</span><span id="infoResolution">—</span></div>
+        <div class="info-row"><span>FPS</span><span id="infoFps">—</span></div>
+        <div class="info-row"><span>Formato</span><span id="infoFormat">—</span></div>
+        <div class="info-row"><span>Tamaño</span><span id="infoSize">—</span></div>
+        <div class="info-row"><span>Bitrate est.</span><span id="infoBitrate">—</span></div>
+      </div>
+
+      <h3 class="panel-title mt">Capas</h3>
+      <div class="layers-panel" id="layersPanel"><div class="layer-empty">Sin capas</div></div>
+
+      <h3 class="panel-title mt">Historial</h3>
+      <div class="history-panel" id="historyPanel"><div class="layer-empty">Sin acciones</div></div>
+
+      <h3 class="panel-title mt">Atajos</h3>
+      <div class="shortcuts">
+        <div class="shortcut-row"><kbd>Space</kbd> Play/Pause</div>
+        <div class="shortcut-row"><kbd>C</kbd> Cortar</div>
+        <div class="shortcut-row"><kbd>←→</kbd> Frame a frame</div>
+        <div class="shortcut-row"><kbd>J K L</kbd> Velocidad</div>
+        <div class="shortcut-row"><kbd>I / O</kbd> In/Out</div>
+        <div class="shortcut-row"><kbd>Ctrl+Z</kbd> Deshacer</div>
+        <div class="shortcut-row"><kbd>Del</kbd> Eliminar</div>
+        <div class="shortcut-row"><kbd>Ctrl+D</kbd> Duplicar</div>
+        <div class="shortcut-row"><kbd>Ctrl+E</kbd> Exportar</div>
+        <div class="shortcut-row"><kbd>F</kbd> Cinema Mode</div>
+        <div class="shortcut-row"><kbd>G</kbd> Toggle Grid</div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ══════════════ TIMELINE PROFESIONAL ══════════════ -->
+  <div class="timeline-wrapper" id="timelineWrapper">
+    <div class="timeline-resize-handle" id="timelineResizeHandle"></div>
+
+    <div class="timeline-header">
+      <div class="tl-label">TIMELINE</div>
+      <div class="tl-ruler" id="tlRuler"></div>
+    </div>
+
+    <div class="timeline-body">
+      <div class="track-labels" id="trackLabels">
+        <div class="track-label" data-track="v1">
+          <div class="tl-ctrl"><button class="tl-btn-lock" data-track="v1">🔓</button><button class="tl-btn-vis" data-track="v1">👁</button></div>
+          <span>V1</span>
+        </div>
+        <div class="track-label" data-track="v2">
+          <div class="tl-ctrl"><button class="tl-btn-lock" data-track="v2">🔓</button><button class="tl-btn-vis" data-track="v2">👁</button></div>
+          <span>V2</span>
+        </div>
+        <div class="track-label" data-track="v3">
+          <div class="tl-ctrl"><button class="tl-btn-lock" data-track="v3">🔓</button><button class="tl-btn-vis" data-track="v3">👁</button></div>
+          <span>V3</span>
+        </div>
+        <div class="track-label audio-track" data-track="a1">
+          <div class="tl-ctrl"><button class="tl-btn-mute" data-track="a1">M</button><button class="tl-btn-solo" data-track="a1">S</button></div>
+          <span>A1</span>
+        </div>
+        <div class="track-label audio-track" data-track="a2">
+          <div class="tl-ctrl"><button class="tl-btn-mute" data-track="a2">M</button><button class="tl-btn-solo" data-track="a2">S</button></div>
+          <span>A2</span>
+        </div>
+        <div class="track-label" data-track="text">
+          <div class="tl-ctrl"><button class="tl-btn-lock" data-track="text">🔓</button><button class="tl-btn-vis" data-track="text">👁</button></div>
+          <span>TXT</span>
+        </div>
+      </div>
+
+      <div class="tracks-container" id="tracksContainer">
+        <div class="track" id="trackV1" data-track="v1"><div class="track-clips" id="clipTrackV1"></div></div>
+        <div class="track" id="trackV2" data-track="v2"><div class="track-clips" id="clipTrackV2"></div></div>
+        <div class="track" id="trackV3" data-track="v3"><div class="track-clips" id="clipTrackV3"></div></div>
+        <div class="track audio-track-bg" id="trackA1" data-track="a1"><div class="track-clips" id="clipTrackA1"><div class="waveform-track" id="waveformTrack"></div></div></div>
+        <div class="track audio-track-bg" id="trackA2" data-track="a2"><div class="track-clips" id="clipTrackA2"></div></div>
+        <div class="track" id="trackText" data-track="text"><div class="track-clips" id="clipTrackText"></div></div>
+        <div class="playhead" id="playhead"><div class="playhead-head"></div><div class="playhead-line"></div></div>
+      </div>
+    </div>
+
+    <!-- Keyframe Row -->
+    <div class="keyframe-row">
+      <div class="kf-row-label">KF</div>
+      <div class="kf-track" id="kfTrack"></div>
+    </div>
+
+    <div class="timeline-footer">
+      <div class="tl-zoom">
+        <label>Zoom</label>
+        <input type="range" id="timelineZoom" min="0.5" max="20" step="0.1" value="1"/>
+        <span id="timelineZoomVal">1x</span>
+      </div>
+      <div class="tl-actions">
+        <button class="btn-icon-sm" id="btnSnap" title="Snap Magnético">🧲 Snap</button>
+        <button class="btn-icon-sm" id="btnFitTimeline">⊡ Fit</button>
+        <button class="btn-icon-sm" id="btnMarkIn">I Mark</button>
+        <button class="btn-icon-sm" id="btnMarkOut">O Mark</button>
+        <button class="btn-icon-sm" id="btnClearTimeline">🗑 Limpiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RENDER -->
+<div class="modal-overlay hidden" id="modalRender">
+  <div class="modal">
+    <div class="modal-icon">⚡</div>
+    <h2>Renderizando Video</h2>
+    <p id="modalRenderStatus">Iniciando FFmpeg WASM…</p>
+    <div class="modal-progress"><div class="modal-bar" id="modalBar"></div></div>
+    <p class="modal-pct" id="modalPct">0%</p>
+    <div class="modal-stats">
+      <span id="renderETA">ETA: —</span>
+      <span id="renderSpeed">Velocidad: —</span>
+    </div>
+    <button class="btn-outline" id="btnCancelRender">Cancelar</button>
+  </div>
+</div>
+
+<!-- Toasts -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Context Menu -->
+<div class="context-menu hidden" id="contextMenu">
+  <button class="ctx-item" data-action="cut">✂ Cortar</button>
+  <button class="ctx-item" data-action="copy">⧉ Copiar</button>
+  <button class="ctx-item" data-action="paste">⊕ Pegar</button>
+  <div class="ctx-divider"></div>
+  <button class="ctx-item" data-action="delete">🗑 Eliminar</button>
+  <button class="ctx-item" data-action="split">⟛ Dividir aquí</button>
+  <button class="ctx-item" data-action="properties">⚙ Propiedades</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
